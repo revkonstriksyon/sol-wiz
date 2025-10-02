@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Plus, X, Users, DollarSign, Calendar, Check, GripVertical } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { solStorage, Sol, SolMember } from "@/lib/storage";
 import {
   DndContext,
   closestCenter,
@@ -30,9 +31,11 @@ type FrequencyType = "daily" | "weekly" | "biweekly" | "monthly";
 const CreateSol = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [solName, setSolName] = useState("");
   const [frequency, setFrequency] = useState<FrequencyType>("weekly");
   const [amount, setAmount] = useState("");
   const [memberCount, setMemberCount] = useState("");
+  const [winnersPerRound, setWinnersPerRound] = useState("1");
   const [members, setMembers] = useState<string[]>([]);
   const [currentMember, setCurrentMember] = useState("");
 
@@ -75,6 +78,10 @@ const CreateSol = () => {
 
   const handleNextStep = () => {
     if (step === 1) {
+      if (!solName.trim()) {
+        toast.error("Tanpri bay sòl la yon non");
+        return;
+      }
       if (!frequency || !amount || !memberCount) {
         toast.error("Tanpri ranpli tout chan yo");
         return;
@@ -87,13 +94,38 @@ const CreateSol = () => {
         toast.error("Ou bezwen omwen 2 manm");
         return;
       }
+      if (parseInt(winnersPerRound) < 1 || parseInt(winnersPerRound) > parseInt(memberCount)) {
+        toast.error("Kantite moun ki resevwa pa valid");
+        return;
+      }
       setStep(2);
     } else if (step === 2) {
       if (members.length !== parseInt(memberCount)) {
         toast.error(`Ou bezwen ajoute ${parseInt(memberCount)} manm`);
         return;
       }
-      // Save sol data (for now just navigate)
+      
+      // Save sol data
+      const solMembers: SolMember[] = members.map((name, index) => ({
+        id: `${Date.now()}-${index}`,
+        name,
+        position: index + 1,
+      }));
+      
+      const newSol: Sol = {
+        id: `sol-${Date.now()}`,
+        name: solName.trim(),
+        frequency,
+        amount: parseInt(amount),
+        memberCount: parseInt(memberCount),
+        winnersPerRound: parseInt(winnersPerRound),
+        members: solMembers,
+        currentRound: 1,
+        startDate: new Date().toISOString(),
+        status: "active",
+      };
+      
+      solStorage.saveSol(newSol);
       toast.success("Sòl kreye ak siksè!");
       navigate("/dashboard");
     }
@@ -143,12 +175,27 @@ const CreateSol = () => {
 
                 <div className="space-y-6">
                   <div className="space-y-2">
+                    <Label htmlFor="solName" className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-primary" />
+                      Non Sòl La
+                    </Label>
+                    <Input
+                      id="solName"
+                      data-testid="input-sol-name"
+                      type="text"
+                      placeholder="Ex: Sòl Fanmi"
+                      value={solName}
+                      onChange={(e) => setSolName(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="frequency" className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-primary" />
                       Frekans Peman
                     </Label>
                     <Select value={frequency} onValueChange={(value) => setFrequency(value as FrequencyType)}>
-                      <SelectTrigger id="frequency">
+                      <SelectTrigger id="frequency" data-testid="select-frequency">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -168,6 +215,7 @@ const CreateSol = () => {
                     </Label>
                     <Input
                       id="amount"
+                      data-testid="input-amount"
                       type="number"
                       placeholder="Ex: 1000"
                       value={amount}
@@ -183,6 +231,7 @@ const CreateSol = () => {
                     </Label>
                     <Input
                       id="memberCount"
+                      data-testid="input-member-count"
                       type="number"
                       placeholder="Ex: 10"
                       value={memberCount}
@@ -191,16 +240,42 @@ const CreateSol = () => {
                     />
                   </div>
 
-                  {amount && memberCount && (
-                    <Card className="p-4 bg-accent border-accent-foreground/20">
+                  <div className="space-y-2">
+                    <Label htmlFor="winnersPerRound" className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-success" />
+                      Konbyen Moun Resevwa Chak Vire
+                    </Label>
+                    <Input
+                      id="winnersPerRound"
+                      data-testid="input-winners-per-round"
+                      type="number"
+                      placeholder="Ex: 1"
+                      value={winnersPerRound}
+                      onChange={(e) => setWinnersPerRound(e.target.value)}
+                      min="1"
+                      max={memberCount || "1"}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Ou ka chwazi 1 oswa plizyè moun resevwa lajan nan menm tan
+                    </p>
+                  </div>
+
+                  {amount && memberCount && winnersPerRound && (
+                    <Card className="p-4 bg-accent border-accent-foreground/20 space-y-2">
                       <p className="text-sm text-accent-foreground">
                         <span className="font-semibold">Total chak vire:</span> {parseInt(amount) * parseInt(memberCount || "0")} Goud
+                      </p>
+                      <p className="text-sm text-accent-foreground">
+                        <span className="font-semibold">Chak moun resevwa:</span> {parseInt(amount) * parseInt(memberCount || "0")} Goud
+                      </p>
+                      <p className="text-sm text-accent-foreground">
+                        <span className="font-semibold">Kantite vire total:</span> {Math.ceil(parseInt(memberCount || "0") / parseInt(winnersPerRound || "1"))} vire
                       </p>
                     </Card>
                   )}
                 </div>
 
-                <Button onClick={handleNextStep} className="w-full mt-6" size="lg">
+                <Button onClick={handleNextStep} className="w-full mt-6" size="lg" data-testid="button-continue">
                   Kontinye
                   <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
                 </Button>
@@ -218,6 +293,7 @@ const CreateSol = () => {
                   <div className="flex gap-2">
                     <Input
                       placeholder="Non manm (ex: Jean Pierre)"
+                      data-testid="input-member-name"
                       value={currentMember}
                       onChange={(e) => setCurrentMember(e.target.value)}
                       onKeyPress={(e) => {
@@ -229,6 +305,7 @@ const CreateSol = () => {
                     />
                     <Button
                       onClick={handleAddMember}
+                      data-testid="button-add-member"
                       disabled={members.length >= parseInt(memberCount) || !currentMember.trim()}
                       size="lg"
                     >
@@ -268,12 +345,13 @@ const CreateSol = () => {
                 </div>
 
                 <div className="flex gap-4 mt-6">
-                  <Button onClick={() => setStep(1)} variant="outline" size="lg" className="flex-1">
+                  <Button onClick={() => setStep(1)} variant="outline" size="lg" className="flex-1" data-testid="button-back">
                     <ArrowLeft className="w-5 h-5 mr-2" />
                     Retounen
                   </Button>
                   <Button
                     onClick={handleNextStep}
+                    data-testid="button-create-sol"
                     disabled={members.length !== parseInt(memberCount)}
                     size="lg"
                     className="flex-1"
