@@ -1,0 +1,181 @@
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { ArrowLeft, Plus, Calendar, Users, TrendingUp, Clock } from "lucide-react";
+import { Link } from "react-router-dom";
+
+// Mock data - will be replaced with real data later
+const mockSols = [
+  {
+    id: 1,
+    name: "Sòl Fanmi",
+    frequency: "Chak Semèn",
+    amount: 1000,
+    memberCount: 10,
+    currentRound: 3,
+    totalRounds: 10,
+    nextPaymentDate: "2025-01-15",
+    status: "active",
+  },
+  {
+    id: 2,
+    name: "Sòl Travay",
+    frequency: "Chak Mwa",
+    amount: 5000,
+    memberCount: 8,
+    currentRound: 2,
+    totalRounds: 8,
+    nextPaymentDate: "2025-02-01",
+    status: "active",
+  },
+];
+
+const Dashboard = () => {
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border bg-card/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="w-5 h-5" />
+            <span>Dakèy</span>
+          </Link>
+          <Link to="/create">
+            <Button size="lg" className="gap-2">
+              <Plus className="w-5 h-5" />
+              Nouvo Sòl
+            </Button>
+          </Link>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* Page Header */}
+          <div className="space-y-2 animate-fade-in">
+            <h1 className="text-4xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-lg text-muted-foreground">Jere tout sòl ou yo nan yon sèl kote</p>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid md:grid-cols-3 gap-6 animate-slide-up">
+            <Card className="p-6 space-y-2 hover:shadow-elegant transition-shadow">
+              <div className="flex items-center justify-between">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-primary" />
+                </div>
+                <span className="text-3xl font-bold text-foreground">2</span>
+              </div>
+              <h3 className="text-sm font-medium text-muted-foreground">Sòl Aktif</h3>
+            </Card>
+
+            <Card className="p-6 space-y-2 hover:shadow-elegant transition-shadow">
+              <div className="flex items-center justify-between">
+                <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-success" />
+                </div>
+                <span className="text-3xl font-bold text-foreground">18</span>
+              </div>
+              <h3 className="text-sm font-medium text-muted-foreground">Total Manm</h3>
+            </Card>
+
+            <Card className="p-6 space-y-2 hover:shadow-elegant transition-shadow">
+              <div className="flex items-center justify-between">
+                <div className="w-12 h-12 rounded-lg bg-warning/10 flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-warning" />
+                </div>
+                <span className="text-3xl font-bold text-foreground">5</span>
+              </div>
+              <h3 className="text-sm font-medium text-muted-foreground">Vire Total</h3>
+            </Card>
+          </div>
+
+          {/* Sols List */}
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-foreground">Sòl Ou yo</h2>
+            
+            {mockSols.length === 0 ? (
+              <Card className="p-12 text-center space-y-4 animate-scale-in">
+                <div className="w-16 h-16 rounded-full bg-muted mx-auto flex items-center justify-center">
+                  <Calendar className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold text-foreground">Pa gen sòl ankò</h3>
+                  <p className="text-muted-foreground">Kreye premye sòl ou a pou kòmanse</p>
+                </div>
+                <Link to="/create">
+                  <Button size="lg" className="gap-2">
+                    <Plus className="w-5 h-5" />
+                    Kreye Sòl
+                  </Button>
+                </Link>
+              </Card>
+            ) : (
+              <div className="grid gap-6">
+                {mockSols.map((sol, index) => (
+                  <Link key={sol.id} to={`/sol/${sol.id}`}>
+                    <Card className="p-6 hover:shadow-elegant transition-all cursor-pointer animate-slide-up" style={{ animationDelay: `${index * 0.1}s` }}>
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                        <div className="space-y-4 flex-1">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="text-2xl font-bold text-foreground">{sol.name}</h3>
+                              <p className="text-muted-foreground">{sol.frequency} • {sol.amount} Goud</p>
+                            </div>
+                            <span className="px-3 py-1 rounded-full bg-success/10 text-success text-sm font-medium">
+                              Aktif
+                            </span>
+                          </div>
+
+                          <div className="grid sm:grid-cols-3 gap-4">
+                            <div className="flex items-center gap-2">
+                              <Users className="w-4 h-4 text-primary" />
+                              <span className="text-sm text-muted-foreground">
+                                {sol.memberCount} manm
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <TrendingUp className="w-4 h-4 text-success" />
+                              <span className="text-sm text-muted-foreground">
+                                Vire {sol.currentRound} / {sol.totalRounds}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-warning" />
+                              <span className="text-sm text-muted-foreground">
+                                Pwochen: {sol.nextPaymentDate}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="lg:w-48">
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Progress</span>
+                              <span className="font-medium text-foreground">
+                                {Math.round((sol.currentRound / sol.totalRounds) * 100)}%
+                              </span>
+                            </div>
+                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-primary transition-all duration-500"
+                                style={{ width: `${(sol.currentRound / sol.totalRounds) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
