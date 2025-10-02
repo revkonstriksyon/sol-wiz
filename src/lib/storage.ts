@@ -9,12 +9,33 @@ export interface Sol {
   currentRound: number;
   startDate: string;
   status: "active" | "completed" | "paused";
+  payments: Payment[];
+  events: SolEvent[];
 }
 
 export interface SolMember {
   id: string;
   name: string;
   position: number;
+}
+
+export interface Payment {
+  id: string;
+  memberId: string;
+  round: number;
+  amountPaid: number;
+  amountDue: number;
+  date: string;
+}
+
+export interface SolEvent {
+  id: string;
+  type: "payment" | "payout";
+  memberId: string;
+  amount: number;
+  date: string;
+  round: number;
+  description: string;
 }
 
 const STORAGE_KEY = "digital_sol_data";

@@ -123,6 +123,8 @@ const CreateSol = () => {
         currentRound: 1,
         startDate: new Date().toISOString(),
         status: "active",
+        payments: [],
+        events: [],
       };
       
       solStorage.saveSol(newSol);
