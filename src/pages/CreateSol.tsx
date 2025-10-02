@@ -4,9 +4,26 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Plus, X, Users, DollarSign, Calendar, Check } from "lucide-react";
+import { ArrowLeft, Plus, X, Users, DollarSign, Calendar, Check, GripVertical } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 type FrequencyType = "daily" | "weekly" | "biweekly" | "monthly";
 
@@ -35,6 +52,25 @@ const CreateSol = () => {
 
   const handleRemoveMember = (index: number) => {
     setMembers(members.filter((_, i) => i !== index));
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setMembers((items) => {
+        const oldIndex = items.indexOf(active.id as string);
+        const newIndex = items.indexOf(over.id as string);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
   };
 
   const handleNextStep = () => {
@@ -202,28 +238,31 @@ const CreateSol = () => {
 
                   {members.length > 0 && (
                     <div className="space-y-2 max-h-96 overflow-y-auto">
-                      {members.map((member, index) => (
-                        <Card key={index} className="p-4 flex items-center justify-between hover:shadow-card transition-shadow">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-semibold">
-                              {index + 1}
-                            </div>
-                            <div>
-                              <p className="font-medium text-foreground">{member}</p>
-                              <p className="text-sm text-muted-foreground">
-                                Vire #{index + 1} - Ap touche nan {frequency === "weekly" ? `semèn ${index + 1}` : `peryòd ${index + 1}`}
-                              </p>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveMember(index)}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </Card>
-                      ))}
+                      <p className="text-sm text-muted-foreground mb-2">
+                        <GripVertical className="w-4 h-4 inline mr-1" />
+                        Kenbe epi deplase pou ranje lòd yo
+                      </p>
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={members}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          {members.map((member, index) => (
+                            <SortableMemberItem
+                              key={member}
+                              id={member}
+                              member={member}
+                              index={index}
+                              frequency={frequency}
+                              onRemove={() => handleRemoveMember(index)}
+                            />
+                          ))}
+                        </SortableContext>
+                      </DndContext>
                     </div>
                   )}
                 </div>
@@ -249,6 +288,57 @@ const CreateSol = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+interface SortableMemberItemProps {
+  id: string;
+  member: string;
+  index: number;
+  frequency: FrequencyType;
+  onRemove: () => void;
+}
+
+const SortableMemberItem = ({ id, member, index, frequency, onRemove }: SortableMemberItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className="p-4 flex items-center justify-between hover:shadow-card transition-shadow cursor-move"
+    >
+      <div className="flex items-center gap-3 flex-1">
+        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+          <GripVertical className="w-5 h-5 text-muted-foreground" />
+        </div>
+        <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-semibold">
+          {index + 1}
+        </div>
+        <div>
+          <p className="font-medium text-foreground">{member}</p>
+          <p className="text-sm text-muted-foreground">
+            Vire #{index + 1} - Ap touche nan {frequency === "weekly" ? `semèn ${index + 1}` : `peryòd ${index + 1}`}
+          </p>
+        </div>
+      </div>
+      <Button variant="ghost" size="sm" onClick={onRemove}>
+        <X className="w-4 h-4" />
+      </Button>
+    </Card>
   );
 };
 

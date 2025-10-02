@@ -124,9 +124,87 @@ const SolDetail = () => {
             </Card>
           </div>
 
+          {/* Calendar Table */}
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-foreground">Kalendriye Peman</h2>
+            <Card className="p-6 overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">Vire</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">Dat</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">Moun k ap Touche</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">Total Peman</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">Estati</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {solData.members.map((member, index) => {
+                    const isPast = index < solData.currentRound - 1;
+                    const isCurrent = member.isCurrentReceiver;
+                    const isFuture = index >= solData.currentRound;
+                    
+                    return (
+                      <tr
+                        key={member.id}
+                        className={`border-b border-border/50 transition-colors ${
+                          isCurrent ? "bg-primary/5" : "hover:bg-muted/50"
+                        }`}
+                      >
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                              isCurrent ? "bg-primary text-primary-foreground" :
+                              isPast ? "bg-success/20 text-success" :
+                              "bg-muted text-muted-foreground"
+                            }`}>
+                              {member.position}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm font-medium text-foreground">{member.nextPaymentDue}</span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className="font-medium text-foreground">{member.name}</span>
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className="font-semibold text-foreground">{totalAmount} Goud</span>
+                        </td>
+                        <td className="py-4 px-4">
+                          {isPast && (
+                            <div className="flex items-center gap-1 text-success">
+                              <Check className="w-4 h-4" />
+                              <span className="text-sm font-medium">Konplete</span>
+                            </div>
+                          )}
+                          {isCurrent && (
+                            <div className="flex items-center gap-1 text-primary">
+                              <Clock className="w-4 h-4" />
+                              <span className="text-sm font-medium">An Kou</span>
+                            </div>
+                          )}
+                          {isFuture && (
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <Clock className="w-4 h-4" />
+                              <span className="text-sm">A Vini</span>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </Card>
+          </div>
+
           {/* Members List */}
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-foreground">Manm yo</h2>
+            <h2 className="text-2xl font-bold text-foreground">Detay Manm yo</h2>
             <div className="grid gap-4">
               {solData.members.map((member, index) => (
                 <Card

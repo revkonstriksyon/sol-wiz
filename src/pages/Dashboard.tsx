@@ -1,7 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Plus, Calendar, Users, TrendingUp, Clock } from "lucide-react";
+import { ArrowLeft, Plus, Calendar, Users, TrendingUp, Clock, Edit2, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 // Mock data - will be replaced with real data later
 const mockSols = [
@@ -30,6 +42,16 @@ const mockSols = [
 ];
 
 const Dashboard = () => {
+  const handleDelete = (solId: number, solName: string) => {
+    toast.success(`Sòl "${solName}" siprime!`);
+    // Will delete from database later
+  };
+
+  const handleEdit = (solId: number) => {
+    toast.info("Fonksyon edit ap vini byento!");
+    // Will implement edit functionality later
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -113,39 +135,37 @@ const Dashboard = () => {
             ) : (
               <div className="grid gap-6">
                 {mockSols.map((sol, index) => (
-                  <Link key={sol.id} to={`/sol/${sol.id}`}>
-                    <Card className="p-6 hover:shadow-elegant transition-all cursor-pointer animate-slide-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                        <div className="space-y-4 flex-1">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h3 className="text-2xl font-bold text-foreground">{sol.name}</h3>
-                              <p className="text-muted-foreground">{sol.frequency} • {sol.amount} Goud</p>
-                            </div>
-                            <span className="px-3 py-1 rounded-full bg-success/10 text-success text-sm font-medium">
-                              Aktif
+                  <Card key={sol.id} className="p-6 hover:shadow-elegant transition-all animate-slide-up" style={{ animationDelay: `${index * 0.1}s` }}>
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                      <Link to={`/sol/${sol.id}`} className="space-y-4 flex-1">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="text-2xl font-bold text-foreground hover:text-primary transition-colors">{sol.name}</h3>
+                            <p className="text-muted-foreground">{sol.frequency} • {sol.amount} Goud</p>
+                          </div>
+                          <span className="px-3 py-1 rounded-full bg-success/10 text-success text-sm font-medium">
+                            Aktif
+                          </span>
+                        </div>
+
+                        <div className="grid sm:grid-cols-3 gap-4">
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-primary" />
+                            <span className="text-sm text-muted-foreground">
+                              {sol.memberCount} manm
                             </span>
                           </div>
-
-                          <div className="grid sm:grid-cols-3 gap-4">
-                            <div className="flex items-center gap-2">
-                              <Users className="w-4 h-4 text-primary" />
-                              <span className="text-sm text-muted-foreground">
-                                {sol.memberCount} manm
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <TrendingUp className="w-4 h-4 text-success" />
-                              <span className="text-sm text-muted-foreground">
-                                Vire {sol.currentRound} / {sol.totalRounds}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4 text-warning" />
-                              <span className="text-sm text-muted-foreground">
-                                Pwochen: {sol.nextPaymentDate}
-                              </span>
-                            </div>
+                          <div className="flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4 text-success" />
+                            <span className="text-sm text-muted-foreground">
+                              Vire {sol.currentRound} / {sol.totalRounds}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-warning" />
+                            <span className="text-sm text-muted-foreground">
+                              Pwochen: {sol.nextPaymentDate}
+                            </span>
                           </div>
                         </div>
 
@@ -165,9 +185,46 @@ const Dashboard = () => {
                             </div>
                           </div>
                         </div>
+                      </Link>
+
+                      <div className="flex gap-2 lg:flex-col">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(sol.id)}
+                          className="gap-2"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          <span className="hidden sm:inline">Edit</span>
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive">
+                              <Trash2 className="w-4 h-4" />
+                              <span className="hidden sm:inline">Delete</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Ou si ou vle siprime sòl sa a?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Aksyon sa a pa ka retoune. Li pral efase tout done sòl "{sol.name}" definitivman.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Anile</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(sol.id, sol.name)}
+                                className="bg-destructive hover:bg-destructive/90"
+                              >
+                                Siprime
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
-                    </Card>
-                  </Link>
+                    </div>
+                  </Card>
                 ))}
               </div>
             )}
