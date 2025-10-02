@@ -64,12 +64,20 @@ const SolDetail = () => {
     const totalPaid = existingPayments.reduce((sum, p) => sum + p.amountPaid, 0);
     const remainingDue = amountDue - totalPaid;
 
+    // Prevent overpayment
+    if (amount > remainingDue) {
+      toast.error(`Kantite lajan twò wo. Moun sa dwe ${remainingDue} Goud sèlman`);
+      return;
+    }
+
+    const newRemainingDue = remainingDue - amount;
+
     const newPayment: Payment = {
       id: `payment-${Date.now()}`,
       memberId: selectedMemberId,
       round: solData.currentRound,
       amountPaid: amount,
-      amountDue: remainingDue,
+      amountDue: newRemainingDue,
       date: paymentDate,
     };
 
@@ -95,7 +103,12 @@ const SolDetail = () => {
     setSelectedMemberId("");
     setPaymentAmount("");
     setPaymentDate(new Date().toISOString().split('T')[0]);
-    toast.success("Peman anrejistre!");
+    
+    if (newRemainingDue > 0) {
+      toast.success(`Peman anrejistre! Rete ${newRemainingDue} Goud pou peye`);
+    } else {
+      toast.success("Peman anrejistre! Konplete!");
+    }
   };
 
   const handleRecordPayout = (memberId: string) => {
@@ -281,24 +294,46 @@ const SolDetail = () => {
                             <SelectValue placeholder="Chwazi yon manm" />
                           </SelectTrigger>
                           <SelectContent>
-                            {solData.members.map((member) => (
-                              <SelectItem key={member.id} value={member.id}>
-                                {member.name}
-                              </SelectItem>
-                            ))}
+                            {solData.members.map((member) => {
+                              const status = getMemberPaymentStatus(member.id, solData.currentRound);
+                              return (
+                                <SelectItem key={member.id} value={member.id}>
+                                  {member.name} - {status.remaining > 0 ? `Rete ${status.remaining} Goud` : 'Konplete'}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                       </div>
+                      {selectedMemberId && (
+                        <Card className="p-4 bg-muted/50">
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Dwe peye:</span>
+                              <span className="font-semibold">{solData.amount} Goud</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Deja peye:</span>
+                              <span className="font-semibold">{getMemberPaymentStatus(selectedMemberId, solData.currentRound).totalPaid} Goud</span>
+                            </div>
+                            <div className="flex justify-between border-t border-border pt-1 mt-1">
+                              <span className="text-muted-foreground font-semibold">Rete pou peye:</span>
+                              <span className="font-bold text-primary">{getMemberPaymentStatus(selectedMemberId, solData.currentRound).remaining} Goud</span>
+                            </div>
+                          </div>
+                        </Card>
+                      )}
                       <div className="space-y-2">
                         <Label htmlFor="amount">Kantite Lajan (Goud)</Label>
                         <Input
                           id="amount"
                           data-testid="input-payment-amount"
                           type="number"
-                          placeholder="Ex: 1000"
+                          placeholder={selectedMemberId ? `Max: ${getMemberPaymentStatus(selectedMemberId, solData.currentRound).remaining}` : "Ex: 1000"}
                           value={paymentAmount}
                           onChange={(e) => setPaymentAmount(e.target.value)}
                           min="0"
+                          max={selectedMemberId ? getMemberPaymentStatus(selectedMemberId, solData.currentRound).remaining : undefined}
                           step="0.01"
                         />
                       </div>
