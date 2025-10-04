@@ -117,16 +117,16 @@ const SolDetail = () => {
     const member = solData.members.find(m => m.id === memberId);
     if (!member) return;
 
-    const totalAmount = solData.amount * solData.memberCount;
+    const payoutAmount = solData.amount * (solData.memberCount - solData.winnersPerRound);
 
     const newEvent: SolEvent = {
       id: `event-${Date.now()}`,
       type: "payout",
       memberId,
-      amount: totalAmount,
+      amount: payoutAmount,
       date: new Date().toISOString().split('T')[0],
       round: solData.currentRound,
-      description: `${member.name} resevwa ${totalAmount} Goud`,
+      description: `${member.name} resevwa ${payoutAmount} Goud`,
     };
 
     const updatedSol: Sol = {
@@ -134,9 +134,24 @@ const SolDetail = () => {
       events: [...solData.events, newEvent],
     };
 
+    // Check if all recipients have received their payout
+    const allRecipients = currentRecipients.map(m => m.id);
+    const recipientsWhoReceived = updatedSol.events
+      .filter(e => e.type === "payout" && e.round === solData.currentRound)
+      .map(e => e.memberId);
+    
+    const allPaid = allRecipients.every(id => recipientsWhoReceived.includes(id) || id === memberId);
+
+    // If all recipients have been paid, advance to next round
+    if (allPaid && solData.currentRound < totalRounds) {
+      updatedSol.currentRound = solData.currentRound + 1;
+      toast.success(`Peman resevwa anrejistre! Pase nan vire ${updatedSol.currentRound}`);
+    } else {
+      toast.success("Peman resevwa anrejistre!");
+    }
+
     solStorage.saveSol(updatedSol);
-    setSolData(updatedSol);
-    toast.success("Peman resevwa anrejistre!");
+    refreshSolData();
   };
 
   if (!solData) {
@@ -213,6 +228,29 @@ const SolDetail = () => {
   const currentRound = rounds.find(r => r.roundNumber === solData.currentRound);
   const currentRecipients = currentRound?.members || [];
 
+  // Financial calculations for current round
+  const getFinancialSummary = () => {
+    const totalExpected = solData.amount * (solData.memberCount - solData.winnersPerRound);
+    const paymentsThisRound = solData.payments.filter(p => p.round === solData.currentRound);
+    const totalCollected = paymentsThisRound.reduce((sum, p) => sum + p.amountPaid, 0);
+    const totalToDistribute = solData.amount * (solData.memberCount - solData.winnersPerRound);
+    const payoutsThisRound = solData.events.filter(e => e.type === "payout" && e.round === solData.currentRound);
+    const totalDistributed = payoutsThisRound.reduce((sum, e) => sum + e.amount, 0);
+    const remainingBalance = totalCollected - totalDistributed;
+
+    return {
+      totalExpected,
+      totalCollected,
+      totalToDistribute,
+      totalDistributed,
+      remainingBalance,
+      collectionProgress: (totalCollected / totalExpected) * 100,
+      distributionProgress: (totalDistributed / totalToDistribute) * 100,
+    };
+  };
+
+  const financialSummary = getFinancialSummary();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -258,6 +296,79 @@ const SolDetail = () => {
                 <div className="flex justify-between text-sm text-primary-foreground/90">
                   <span>Vire {solData.currentRound} / {totalRounds}</span>
                   <span>Pwochen peman: {getNextPaymentDate(solData.currentRound)}</span>
+                </div>
+              </div>
+            </Card>
+
+            {/* Financial Summary for Current Round */}
+            <Card className="p-6 bg-card shadow-card border-border">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-primary" />
+                    Kontwòl Finansye - Vire #{solData.currentRound}
+                  </h3>
+                </div>
+
+                {/* Collection Section */}
+                <div className="space-y-3 pb-4 border-b border-border">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total Pou Kolekte</span>
+                    <span className="text-lg font-bold text-foreground">{financialSummary.totalExpected.toFixed(2)} Goud</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total Kolekte</span>
+                    <span className="text-lg font-bold text-success">{financialSummary.totalCollected.toFixed(2)} Goud</span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Progress Koleksyon</span>
+                      <span>{Math.round(financialSummary.collectionProgress)}%</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-success transition-all duration-500"
+                        style={{ width: `${Math.min(financialSummary.collectionProgress, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Distribution Section */}
+                <div className="space-y-3 pb-4 border-b border-border">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total Pou Distribye</span>
+                    <span className="text-lg font-bold text-foreground">{financialSummary.totalToDistribute.toFixed(2)} Goud</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total Distribye</span>
+                    <span className="text-lg font-bold text-primary">{financialSummary.totalDistributed.toFixed(2)} Goud</span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Progress Distribisyon</span>
+                      <span>{Math.round(financialSummary.distributionProgress)}%</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all duration-500"
+                        style={{ width: `${Math.min(financialSummary.distributionProgress, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Balance */}
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-base font-semibold text-foreground">Balans ki Rete</span>
+                    <span className={`text-2xl font-bold ${financialSummary.remainingBalance >= 0 ? 'text-success' : 'text-destructive'}`}>
+                      {financialSummary.remainingBalance.toFixed(2)} Goud
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Lajan ki kolekte men ki poko distribye
+                  </p>
                 </div>
               </div>
             </Card>
